@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Editor — Bobby Thompson</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-primary: #1A1A1A;
+            --bg-secondary: #242424;
+            --bg-tertiary: #2E2E2E;
+            --text-primary: #FAF7F2;
+            --text-secondary: #A8A8A8;
+            --text-muted: #6A6A6A;
+            --accent: #C45D3A;
+            --accent-hover: #D4714F;
+            --accent-light: rgba(196, 93, 58, 0.15);
+            --border: #3A3A3A;
+            --success: #4A9F6E;
+            --danger: #C44A4A;
+
+            --font-display: 'Cormorant Garamond', Georgia, serif;
+            --font-mono: 'JetBrains Mono', monospace;
+
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            min-height: 100vh;
+        }
+
+        /* Layout */
+        .app {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            min-height: 100vh;
+        }
+
+        @media (max-width: 1024px) {
+            .app {
+                grid-template-columns: 1fr;
+            }
+            .output-panel {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 50vh;
+                transform: translateY(calc(100% - 60px));
+                transition: transform 0.4s var(--ease-out-expo);
+                z-index: 100;
+            }
+            .output-panel.expanded {
+                transform: translateY(0);
+            }
+            .editor-panel {
+                padding-bottom: 80px;
+            }
+        }
+
+        /* Editor Panel */
+        .editor-panel {
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .editor-header {
+            margin-bottom: 40px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .editor-title {
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+
+        .editor-subtitle {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Form Elements */
+        .field {
+            margin-bottom: 20px;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .field-input,
+        .field-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .field-input:focus,
+        .field-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: var(--bg-tertiary);
+        }
+
+        .field-textarea {
+            min-height: 100px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .field-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* Project Cards */
+        .project-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .project-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .project-number {
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
+        .project-card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .project-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .project-grid .field:last-child {
+            grid-column: 1 / -1;
+        }
+
+        .tags-input {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            min-height: 44px;
+            align-items: center;
+            cursor: text;
+        }
+
+        .tags-input:focus-within {
+            border-color: var(--accent);
+            background: var(--bg-tertiary);
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: var(--accent-light);
+            color: var(--accent);
+            border-radius: 3px;
+            font-size: 11px;
+        }
+
+        .tag-remove {
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .tag-remove:hover {
+            opacity: 1;
+        }
+
+        .tag-input-field {
+            flex: 1;
+            min-width: 100px;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            outline: none;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 16px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.03em;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            border-color: var(--text-muted);
+            color: var(--text-primary);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        .btn-danger {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: var(--text-primary);
+        }
+
+        .btn-icon {
+            padding: 6px 10px;
+        }
+
+        /* Output Panel */
+        .output-panel {
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .output-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .output-title {
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .output-content {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+        }
+
+        .output-code {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .output-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+        }
+
+        .output-footer .btn {
+            flex: 1;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 12px 24px;
+            background: var(--success);
+            color: var(--text-primary);
+            border-radius: 6px;
+            font-size: 12px;
+            opacity: 0;
+            transition: all 0.4s var(--ease-out-expo);
+            z-index: 1000;
+        }
+
+        .toast.visible {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Mobile toggle */
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: var(--accent);
+            border: none;
+            border-radius: 50%;
+            color: var(--text-primary);
+            cursor: pointer;
+            z-index: 101;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        @media (max-width: 1024px) {
+            .mobile-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        /* Instructions */
+        .instructions {
+            background: var(--accent-light);
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            padding: 16px 20px;
+            margin-bottom: 32px;
+        }
+
+        .instructions-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .instructions-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .instructions-text ol {
+            margin-left: 16px;
+            margin-top: 8px;
+        }
+
+        .instructions-text li {
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="editor-panel">
+            <div class="editor-header">
+                <h1 class="editor-title">Site Editor</h1>
+                <p class="editor-subtitle">Edit your portfolio content below</p>
+            </div>
+
+            <div class="instructions">
+                <div class="instructions-title">How to update your site</div>
+                <div class="instructions-text">
+                    <ol>
+                        <li>Edit your content in the fields below</li>
+                        <li>Copy the generated code from the right panel</li>
+                        <li>Paste it back to me and I'll update your site</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Profile Section -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">Profile</span>
+                </div>
+                <div class="field">
+                    <label class="field-label">Name</label>
+                    <input type="text" class="field-input" id="name" value="Bobby Thompson">
+                </div>
+                <div class="field">
+                    <label class="field-label">Tagline</label>
+                    <input type="text" class="field-input" id="tagline" value="Finance & Strategy Leader / Vibe Coding Enthusiast · Northwest Arkansas">
+                </div>
+                <div class="field">
+                    <label class="field-label">Email</label>
+                    <input type="email" class="field-input" id="email" value="bobbyathompson@gmail.com">
+                </div>
+            </div>
+
+            <!-- Hero Section -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">Hero Text</span>
+                </div>
+                <div class="field">
+                    <textarea class="field-textarea" id="heroText" rows="3">I lead a finance & strategy team by day (and night). I vibe-code random things I think are useful on the weekend.</textarea>
+                    <div class="field-hint">Use *text* for italic emphasis and **text** for accent color</div>
+                </div>
+            </div>
+
+            <!-- Contact & Footer Section -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">Contact & Footer</span>
+                </div>
+                <div class="field">
+                    <label class="field-label">Contact Heading</label>
+                    <input type="text" class="field-input" id="contactHeading" value="Reach out if you want to build something">
+                </div>
+                <div class="field">
+                    <label class="field-label">Footer Text</label>
+                    <input type="text" class="field-input" id="footerText" value="Bobby Thompson · Built with Claude Code and frontend-design">
+                    <div class="field-hint">Year is added automatically</div>
+                </div>
+            </div>
+
+            <!-- Projects Section -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">Projects</span>
+                    <div class="section-actions">
+                        <button class="btn btn-primary" onclick="addProject()">+ Add Project</button>
+                    </div>
+                </div>
+                <div id="projects-container">
+                    <!-- Projects rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="output-panel" id="outputPanel">
+            <div class="output-header">
+                <span class="output-title">Generated Config</span>
+                <button class="btn btn-icon" onclick="togglePanel()" id="panelToggle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 15l-6-6-6 6"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="output-content">
+                <pre class="output-code" id="outputCode"></pre>
+            </div>
+            <div class="output-footer">
+                <button class="btn btn-primary" onclick="copyToClipboard()">Copy to Clipboard</button>
+            </div>
+        </div>
+    </div>
+
+    <button class="mobile-toggle" onclick="togglePanel()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 18l2-2-2-2M8 18l-2-2 2-2M14.5 4l-5 16"/>
+        </svg>
+    </button>
+
+    <div class="toast" id="toast">Copied to clipboard!</div>
+
+    <script>
+        // Initial projects data
+        let projects = [
+            {
+                title: "Coffee Calories",
+                description: "I got annoyed that the Starbucks app didn't dynamically update calorie calculations as you customized your drink. This is a highly customizable solution to that problem.",
+                year: "2026",
+                category: "Web App",
+                tags: ["React", "API", "Charts"],
+                image: "Coffee.png",
+                link: "https://coffee-calorie-guide.vercel.app/"
+            }
+        ];
+
+        // Render projects
+        function renderProjects() {
+            const container = document.getElementById('projects-container');
+            container.innerHTML = projects.map((project, index) => `
+                <div class="project-card" data-index="${index}">
+                    <div class="project-card-header">
+                        <span class="project-number">Project ${index + 1}</span>
+                        <div class="project-card-actions">
+                            <button class="btn btn-icon" onclick="moveProject(${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
+                            <button class="btn btn-icon" onclick="moveProject(${index}, 1)" ${index === projects.length - 1 ? 'disabled' : ''}>↓</button>
+                            <button class="btn btn-icon btn-danger" onclick="removeProject(${index})">×</button>
+                        </div>
+                    </div>
+                    <div class="project-grid">
+                        <div class="field">
+                            <label class="field-label">Title</label>
+                            <input type="text" class="field-input" value="${escapeHtml(project.title)}" onchange="updateProject(${index}, 'title', this.value)">
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Year</label>
+                            <input type="text" class="field-input" value="${escapeHtml(project.year)}" onchange="updateProject(${index}, 'year', this.value)">
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Category</label>
+                            <input type="text" class="field-input" value="${escapeHtml(project.category)}" onchange="updateProject(${index}, 'category', this.value)">
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Link URL</label>
+                            <input type="text" class="field-input" value="${escapeHtml(project.link)}" onchange="updateProject(${index}, 'link', this.value)" placeholder="https://...">
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Description</label>
+                            <textarea class="field-textarea" rows="2" onchange="updateProject(${index}, 'description', this.value)">${escapeHtml(project.description)}</textarea>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Tags</label>
+                            <div class="tags-input" onclick="this.querySelector('input').focus()">
+                                ${project.tags.map((tag, tagIndex) => `
+                                    <span class="tag">
+                                        ${escapeHtml(tag)}
+                                        <span class="tag-remove" onclick="removeTag(${index}, ${tagIndex}); event.stopPropagation();">×</span>
+                                    </span>
+                                `).join('')}
+                                <input type="text" class="tag-input-field" placeholder="Add tag..." onkeydown="handleTagInput(event, ${index})">
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Image URL (optional)</label>
+                            <input type="text" class="field-input" value="${escapeHtml(project.image || '')}" onchange="updateProject(${index}, 'image', this.value)" placeholder="https://...">
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            generateOutput();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function updateProject(index, field, value) {
+            projects[index][field] = value;
+            generateOutput();
+        }
+
+        function addProject() {
+            projects.push({
+                title: "New Project",
+                description: "Description of your project...",
+                year: new Date().getFullYear().toString(),
+                category: "Category",
+                tags: [],
+                image: "",
+                link: "#"
+            });
+            renderProjects();
+        }
+
+        function removeProject(index) {
+            if (confirm('Remove this project?')) {
+                projects.splice(index, 1);
+                renderProjects();
+            }
+        }
+
+        function moveProject(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < projects.length) {
+                [projects[index], projects[newIndex]] = [projects[newIndex], projects[index]];
+                renderProjects();
+            }
+        }
+
+        function removeTag(projectIndex, tagIndex) {
+            projects[projectIndex].tags.splice(tagIndex, 1);
+            renderProjects();
+        }
+
+        function handleTagInput(event, projectIndex) {
+            if (event.key === 'Enter' || event.key === ',') {
+                event.preventDefault();
+                const value = event.target.value.trim().replace(',', '');
+                if (value) {
+                    projects[projectIndex].tags.push(value);
+                    renderProjects();
+                }
+            }
+        }
+
+        // Generate output
+        function generateOutput() {
+            const config = {
+                siteConfig: {
+                    name: document.getElementById('name').value,
+                    tagline: document.getElementById('tagline').value,
+                    email: document.getElementById('email').value,
+                    heroText: document.getElementById('heroText').value,
+                    contactHeading: document.getElementById('contactHeading').value,
+                    footerText: document.getElementById('footerText').value
+                },
+                projects: projects.map(p => ({
+                    title: p.title,
+                    description: p.description,
+                    year: p.year,
+                    category: p.category,
+                    tags: p.tags,
+                    image: p.image || null,
+                    link: p.link
+                }))
+            };
+
+            const output = JSON.stringify(config, null, 2);
+            document.getElementById('outputCode').textContent = output;
+        }
+
+        // Copy to clipboard
+        function copyToClipboard() {
+            const code = document.getElementById('outputCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                showToast('Copied to clipboard!');
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 2500);
+        }
+
+        // Panel toggle for mobile
+        function togglePanel() {
+            document.getElementById('outputPanel').classList.toggle('expanded');
+        }
+
+        // Listen for input changes
+        document.querySelectorAll('.field-input, .field-textarea').forEach(el => {
+            el.addEventListener('input', generateOutput);
+        });
+
+        // Initial render
+        renderProjects();
+    </script>
+</body>
+</html>
